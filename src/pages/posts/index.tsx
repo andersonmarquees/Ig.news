@@ -2,9 +2,22 @@ import { GetStaticProps } from "next";
 import Head from "next/head";
 import { getPrismicClient } from "../../services/prismic";
 import Prismic from "@prismicio/client";
+import { RichText } from "prismic-dom";
+
 import styles from "./styles.module.scss";
 
-export default function Posts() {
+type Post = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  updateAt: string;
+};
+
+interface PostProps {
+  posts: Post[];
+}
+
+export default function Posts({ posts }: PostProps) {
   return (
     <>
       <Head>
@@ -13,30 +26,13 @@ export default function Posts() {
 
       <main className={styles.container}>
         <div className={styles.posts}>
-          <a href="#">
-            <time>12 março de 2021</time>
-            <strong>Creating a Monorepo with Lena</strong>
-            <p>
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Lorem
-              ipsum dolor sit amet consectetur adipisicing elit.
-            </p>
-          </a>
-          <a href="#">
-            <time>12 março de 2021</time>
-            <strong>Creating a Monorepo with Lena</strong>
-            <p>
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Lorem
-              ipsum dolor sit amet consectetur adipisicing elit.
-            </p>
-          </a>
-          <a href="#">
-            <time>12 março de 2021</time>
-            <strong>Creating a Monorepo with Lena</strong>
-            <p>
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Lorem
-              ipsum dolor sit amet consectetur adipisicing elit.
-            </p>
-          </a>
+          {posts.map((post) => (
+            <a key={post.slug} href="#">
+              <time>{post.updateAt}</time>
+              <strong>{post.title}</strong>
+              <p>{post.excerpt}</p>
+            </a>
+          ))}
         </div>
       </main>
     </>
@@ -54,9 +50,25 @@ export const getStaticProps: GetStaticProps = async () => {
     }
   );
 
-  console.log(response);
+  const posts = response.results.map((post) => {
+    return {
+      slug: post.uid,
+      title: RichText.asText(post.data.title),
+      excerpt:
+        post.data.content.find((content) => content.type === "paragraph")
+          ?.text ?? "",
+      updateAt: new Date(post.last_publication_date).toLocaleDateString(
+        "pt-BB",
+        {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        }
+      ),
+    };
+  });
 
   return {
-    props: {},
+    props: { posts },
   };
 };
